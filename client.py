@@ -7,7 +7,6 @@ class KVClient:
         self.coordinator_port = coordinator_port
     
     def _send_request(self, request: dict) -> dict:
-        """Send request to coordinator"""
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
                 sock.settimeout(10)
@@ -20,7 +19,6 @@ class KVClient:
             return {'success': False, 'error': str(e)}
     
     def set(self, key: str, value: any) -> bool:
-        """Set a key-value pair"""
         response = self._send_request({
             'operation': 'SET',
             'key': key,
@@ -29,7 +27,6 @@ class KVClient:
         return response.get('success', False)
     
     def get(self, key: str) -> any:
-        """Get a value by key"""
         response = self._send_request({
             'operation': 'GET',
             'key': key
@@ -37,7 +34,6 @@ class KVClient:
         return response.get('value') if response.get('success') else None
     
     def delete(self, key: str) -> bool:
-        """Delete a key"""
         response = self._send_request({
             'operation': 'DELETE',
             'key': key
@@ -45,5 +41,4 @@ class KVClient:
         return response.get('success', False)
     
     def health(self) -> dict:
-        """Check system health"""
         return self._send_request({'operation': 'HEALTH'})
