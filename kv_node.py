@@ -31,7 +31,6 @@ class KVStoreNode:
                 'version': self.data.get(key, {}).get('version', 0) + 1
             }
             
-            # Sync to replicas if this is master
             if sync_replicas and not self.replica_of:
                 self._sync_to_replicas('SET', key, value)
                 
