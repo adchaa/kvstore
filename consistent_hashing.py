@@ -42,3 +42,36 @@ class ConsistentHash:
                 return self.ring[ring_key]
         
         return self.ring[self.sorted_keys[0]]
+
+    def get_nodes(self, key: str, count: int = 1) -> List[str]:
+        if not self.ring:
+            return []
+        
+        hash_key = self._hash(key)
+        nodes = []
+        start_index = 0
+        found = False
+        for i, ring_key in enumerate(self.sorted_keys):
+            if ring_key >= hash_key:
+                start_index = i
+                found = True
+                break
+        
+        if not found:
+            start_index = 0
+        seen_nodes = set()
+        total_keys = len(self.sorted_keys)
+        
+        for i in range(total_keys):
+            idx = (start_index + i) % total_keys
+            ring_key = self.sorted_keys[idx]
+            node = self.ring[ring_key]
+            
+            if node not in seen_nodes:
+                nodes.append(node)
+                seen_nodes.add(node)
+                
+            if len(nodes) == count:
+                break
+                
+        return nodes

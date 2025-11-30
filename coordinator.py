@@ -19,32 +19,41 @@ class Coordinator:
             'node_id': node_id
         }
         self.consistent_hash.add_node(node_id)
-        print(f"Coordinator Registered node: {node_id} at {host}:{port}")
     
     def unregister_node(self, node_id: str):
         if node_id in self.nodes:
             del self.nodes[node_id]
             self.consistent_hash.remove_node(node_id)
-            print(f"Unregistered node: {node_id}")
     
     def get_node_for_key(self, key: str) -> Dict[str, Any]:
         node_id = self.consistent_hash.get_node(key)
         return self.nodes.get(node_id)
     
     def route_request(self, key: str, operation: str, value: Any = None) -> Dict[str, Any]:
-        node_info = self.get_node_for_key(key)
+        target_nodes = self.consistent_hash.get_nodes(key, count=3)
         
-        if not node_info:
+        if not target_nodes:
             return {'success': False, 'error': 'No available nodes'}
         
-        try:
-            return self._send_to_node(node_info, {
-                'operation': operation,
-                'key': key,
-                'value': value
-            })
-        except Exception as e:
-            return {'success': False, 'error': f'Node communication failed: {str(e)}'}
+        last_error = None
+        
+        for node_id in target_nodes:
+            node_info = self.nodes.get(node_id)
+            if not node_info:
+                continue
+            
+            try:
+                return self._send_to_node(node_info, {
+                    'operation': operation,
+                    'key': key,
+                    'value': value
+                })
+            except Exception as e:
+                print(f"Node {node_id} failed: {e}, trying next node...")
+                last_error = e
+                continue
+            
+        return {'success': False, 'error': f'All nodes failed. Last error: {str(last_error)}'}
     
     def _send_to_node(self, node_info: Dict, message: Dict) -> Dict:
         try:
@@ -64,8 +73,6 @@ class Coordinator:
         server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server_socket.bind((self.host, self.port))
         server_socket.listen(10)
-        
-        print(f"Coordinator listening on {self.host}:{self.port}")
         
         while self.running:
             try:
