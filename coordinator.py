@@ -30,7 +30,7 @@ class Coordinator:
         return self.nodes.get(node_id)
     
     def route_request(self, key: str, operation: str, value: Any = None) -> Dict[str, Any]:
-        target_nodes = self.consistent_hash.get_nodes(key, count=3)
+        target_nodes = self.consistent_hash.get_nodes(key, count=2)
         
         if not target_nodes:
             return {'success': False, 'error': 'No available nodes'}
