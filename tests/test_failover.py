@@ -104,6 +104,7 @@ class TestFailover(unittest.TestCase):
         time.sleep(1)
         
         retrieved_value = client.get(key)
+        retrieved_value = client.get(key)
         
         self.assertEqual(retrieved_value, value, "Failover retrieval failed")
 

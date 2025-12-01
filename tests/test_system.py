@@ -75,7 +75,7 @@ class TestKVSystem(unittest.TestCase):
             self.assertEqual(value, expected_value, f"GET failed for key {key}")
         
         health = client.health()
-        self.assertIsNotNone(health)
+        self.assertEqual(health["status"],"healthy")
 
 if __name__ == "__main__":
     unittest.main()

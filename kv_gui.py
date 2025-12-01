@@ -7,7 +7,7 @@ class KVStoreGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("KV Store Client")
-        self.root.geometry("600x700")
+        self.root.geometry("1200x700")
         self.client = None
         self.style = ttk.Style()
         self.style.configure("TButton", padding=6)
