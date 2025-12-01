@@ -3,7 +3,7 @@ import socket
 import json
 import time
 from typing import Dict, Any, Optional
-from consistent_hashing import ConsistentHash
+from RWlock import ReadWriteLock
 
 class KVStoreNode:
     def __init__(self, node_id: str, host: str, port: int, coordinator_host: str = None, coordinator_port: int = None, replica_of: str = None):
@@ -20,11 +20,23 @@ class KVStoreNode:
         
     def get_lock(self, key: str) -> threading.Lock:
         if key not in self.locks:
-            self.locks[key] = threading.Lock()
+            self.locks[key] = ReadWriteLock()
         return self.locks[key]
     
+    def get(self, key: str) -> Optional[Any]:
+        lock = self.get_lock(key)
+        lock.acquire_read()
+        try:
+            if key in self.data:
+                return self.data[key]['value']
+            return None
+        finally:
+            lock.release_read()
+
     def set(self, key: str, value: Any, sync_replicas: bool = True) -> bool:
-        with self.get_lock(key):
+        lock = self.get_lock(key)
+        lock.acquire_write()
+        try:
             self.data[key] = {
                 'value': value,
                 'timestamp': time.time(),
@@ -35,15 +47,13 @@ class KVStoreNode:
                 self._sync_to_replicas('SET', key, value)
                 
             return True
-    
-    def get(self, key: str) -> Optional[Any]:
-        with self.get_lock(key):
-            if key in self.data:
-                return self.data[key]['value']
-            return None
-    
+        finally:
+            lock.release_write()
+
     def delete(self, key: str, sync_replicas: bool = True) -> bool:
-        with self.get_lock(key):
+        lock = self.get_lock(key)
+        lock.acquire_write()
+        try:
             if key in self.data:
                 del self.data[key]
                 
@@ -52,6 +62,8 @@ class KVStoreNode:
                     
                 return True
             return False
+        finally:
+            lock.release_write()
     
     def _sync_to_replicas(self, operation: str, key: str, value: Any = None):
         for replica in self.replicas:
